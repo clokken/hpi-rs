@@ -8,8 +8,4 @@ pub use self::hpi_context::*;
 pub use self::hpi_items::*;
 pub use self::hpi_reader::*;
 
-pub mod internals {
-  mod data;
-
-  pub use data::*;
-}
+pub mod internals;

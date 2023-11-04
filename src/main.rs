@@ -1,5 +1,4 @@
-use hpi::{HpiReader};
-use packed_struct::PackedStruct;
+use hpi::HpiReader;
 use std::fs::File;
 use std::io::{Read, Write, Result};
 use std::process;
@@ -30,10 +29,10 @@ fn test_read() {
 }
 
 fn test_write(version_data: hpi::internals::VersionData) {
-    println!("{}", version_data);
+    /*println!("{:?}", version_data);
 
     let data = version_data.pack().expect("Failed to pack VersionData");
-    write_bytes_to_file(HPI_OUTPUT, &data).expect("Failed to write bytes to files");
+    write_bytes_to_file(HPI_OUTPUT, &data).expect("Failed to write bytes to files");*/
 }
 
 fn read_file_into_bytes(file_path: &str) -> Result<Vec<u8>> {
