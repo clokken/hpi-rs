@@ -1,4 +1,4 @@
-use crate::internals::{DataStruct, DataStructError, utils};
+use crate::{internals::{DataStruct, utils}, HpiError};
 
 #[derive(Debug)]
 pub struct DirectoryData {
@@ -12,9 +12,9 @@ pub struct DirectoryData {
 pub const DIRECTORY_DATA_SIZE: usize = 20;
 
 impl DataStruct for DirectoryData {
-    fn read(data: &[u8], offset: usize) -> Result<Self, DataStructError> {
+    fn read(data: &[u8], offset: usize) -> Result<Self, HpiError> {
         if offset + DIRECTORY_DATA_SIZE > data.len() {
-            return Err(DataStructError::NotEnoughSize {
+            return Err(HpiError::NotEnoughSpace {
                 needed: DIRECTORY_DATA_SIZE,
                 available: data.len() - offset,
             });
@@ -31,9 +31,15 @@ impl DataStruct for DirectoryData {
         })
     }
 
-    fn write(&self, out_data: &mut [u8], offset: usize) -> Result<(), DataStructError> {
+    fn cursor_read(data: &[u8], cursor: &mut usize) -> Result<Self, HpiError> {
+        let result = DirectoryData::read(data, *cursor);
+        *cursor += DIRECTORY_DATA_SIZE;
+        result
+    }
+
+    fn write(&self, out_data: &mut [u8], offset: usize) -> Result<(), HpiError> {
         if offset + DIRECTORY_DATA_SIZE > out_data.len() {
-            return Err(DataStructError::NotEnoughSize {
+            return Err(HpiError::NotEnoughSpace {
                 needed: DIRECTORY_DATA_SIZE,
                 available: out_data.len() - offset,
             });

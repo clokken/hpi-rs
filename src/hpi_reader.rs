@@ -1,45 +1,58 @@
-use std::{error::Error, fmt};
+use std::fmt;
+
+use crate::hpi_error::HpiError;
+use crate::internals::{VersionData, DataStruct, HeaderData, VERSION_DATA_SIZE, HEADER_DATA_SIZE, utils};
+use crate::{consts, DataMap, HpiContext, buffer_utils};
+
 pub struct HpiReader;
 
 impl HpiReader {
-    pub fn read(data: &[u8]) -> Result<(), Box<dyn Error>> {
-        /*if data.len() < 8 {
-            return HpiReaderError::err("Not enough data to read Version".into());
-        }
+    pub fn read(data: &[u8]) -> Result<HpiContext, HpiError> {
+        let mut data_map = DataMap::new();
+        let mut cursor = 0;
 
-        let version_buf = &data[..8].try_into()?;
-        let version_data = VersionData::unpack(version_buf)?;
+        data_map.add(cursor, VERSION_DATA_SIZE, "version");
+        let version_data = VersionData::cursor_read(data, &mut cursor)?;
 
         if version_data.version != consts::HPI_VERSION {
-            return HpiReaderError::err(format!("Unexpected version: {}", version_data.version));
+            return Err(HpiError::UnknownVersion(version_data.version));
         }
 
         if version_data.marker != consts::HPI_MARKER {
-            return HpiReaderError::err(format!("Unexpected marker: {}", version_data.marker));
+            return Err(HpiError::UnknownMarker(version_data.marker));
         }
 
-        let header_buf = &data[8..32].try_into()?;
-        let header_data = HeaderData::unpack(header_buf)?;
+        data_map.add(cursor, HEADER_DATA_SIZE, "header");
+        let header_data = HeaderData::cursor_read(data, &mut cursor)?;
 
-        println!("{}", header_data);*/
+        // TODO data_map.add
+        let directory_buffer = utils::try_slice(
+            data,
+            header_data.dir_block_ptr.try_into().unwrap(),
+            header_data.dir_block_len.try_into().unwrap(),
+        )?;
 
-        Ok(())
+        // TODO data_map.add
+        let directory_block = buffer_utils::read_chunk_buffer(directory_buffer)?;
+
+        let names_buffer = utils::try_slice(
+            data,
+            header_data.names_block_ptr.try_into().unwrap(),
+            header_data.names_block_len.try_into().unwrap(),
+        )?;
+
+        let names_block = buffer_utils::read_chunk_buffer(names_buffer)?;
+
+        let context = HpiContext::build(data, directory_block, names_block)?;
+
+        Ok(context)
     }
 }
 
-#[derive(Debug)]
-struct HpiReaderError(String);
-
-impl fmt::Display for HpiReaderError {
+impl fmt::Display for HpiError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "There is an error: {}", self.0)
-    }
-}
-
-impl Error for HpiReaderError {}
-
-impl HpiReaderError {
-    pub fn err(msg: String) -> Result<(), Box<dyn Error>> {
-        Err(Box::new(HpiReaderError(msg)))
+        // write!(f, "There is an error: {}", self.0)
+        // TODO
+        write!(f, "{}", self)
     }
 }

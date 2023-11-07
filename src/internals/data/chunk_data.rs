@@ -1,4 +1,4 @@
-use crate::internals::{DataStruct, DataStructError, utils};
+use crate::{internals::{DataStruct, utils}, HpiError};
 
 #[derive(Debug)]
 pub struct ChunkData {
@@ -14,9 +14,9 @@ pub struct ChunkData {
 pub const CHUNK_DATA_SIZE: usize = 19;
 
 impl DataStruct for ChunkData {
-    fn read(data: &[u8], offset: usize) -> Result<Self, DataStructError> {
+    fn read(data: &[u8], offset: usize) -> Result<Self, HpiError> {
         if offset + CHUNK_DATA_SIZE > data.len() {
-            return Err(DataStructError::NotEnoughSize {
+            return Err(HpiError::NotEnoughSpace {
                 needed: CHUNK_DATA_SIZE,
                 available: data.len() - offset,
             });
@@ -45,9 +45,15 @@ impl DataStruct for ChunkData {
         })
     }
 
-    fn write(&self, out_data: &mut [u8], offset: usize) -> Result<(), DataStructError> {
+    fn cursor_read(data: &[u8], cursor: &mut usize) -> Result<Self, HpiError> {
+        let result = ChunkData::read(data, *cursor);
+        *cursor += CHUNK_DATA_SIZE;
+        result
+    }
+
+    fn write(&self, out_data: &mut [u8], offset: usize) -> Result<(), HpiError> {
         if offset + CHUNK_DATA_SIZE > out_data.len() {
-            return Err(DataStructError::NotEnoughSize {
+            return Err(HpiError::NotEnoughSpace {
                 needed: CHUNK_DATA_SIZE,
                 available: out_data.len() - offset,
             });

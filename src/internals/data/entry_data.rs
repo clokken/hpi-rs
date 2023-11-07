@@ -1,4 +1,4 @@
-use crate::internals::{DataStruct, DataStructError, utils};
+use crate::{internals::{DataStruct, utils}, HpiError};
 
 #[derive(Debug)]
 pub struct EntryData {
@@ -13,9 +13,9 @@ pub struct EntryData {
 pub const ENTRY_DATA_SIZE: usize = 24;
 
 impl DataStruct for EntryData {
-    fn read(data: &[u8], offset: usize) -> Result<Self, DataStructError> {
+    fn read(data: &[u8], offset: usize) -> Result<Self, HpiError> {
         if offset + ENTRY_DATA_SIZE > data.len() {
-            return Err(DataStructError::NotEnoughSize {
+            return Err(HpiError::NotEnoughSpace {
                 needed: ENTRY_DATA_SIZE,
                 available: data.len() - offset,
             });
@@ -33,9 +33,15 @@ impl DataStruct for EntryData {
         })
     }
 
-    fn write(&self, out_data: &mut [u8], offset: usize) -> Result<(), DataStructError> {
+    fn cursor_read(data: &[u8], cursor: &mut usize) -> Result<Self, HpiError> {
+        let result = EntryData::read(data, *cursor);
+        *cursor += ENTRY_DATA_SIZE;
+        result
+    }
+
+    fn write(&self, out_data: &mut [u8], offset: usize) -> Result<(), HpiError> {
         if offset + ENTRY_DATA_SIZE > out_data.len() {
-            return Err(DataStructError::NotEnoughSize {
+            return Err(HpiError::NotEnoughSpace {
                 needed: ENTRY_DATA_SIZE,
                 available: out_data.len() - offset,
             });
@@ -92,7 +98,7 @@ mod tests {
             flat_size: 0x01020408,
             compressed_size: 0xABCDEF12,
             date: 0x1337C0DE,
-            checksum: 13374269,
+            checksum: 0x13374269,
         };
 
         let mut bytes: [u8; ENTRY_DATA_SIZE] = [0; ENTRY_DATA_SIZE];

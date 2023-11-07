@@ -1,5 +1,5 @@
 mod data_struct;
-mod utils;
+pub mod utils;
 mod data;
 
 pub use data_struct::*;

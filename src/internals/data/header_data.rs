@@ -1,4 +1,4 @@
-use crate::internals::{DataStruct, DataStructError, utils};
+use crate::{internals::{DataStruct, utils}, HpiError};
 
 #[derive(Debug)]
 pub struct HeaderData {
@@ -6,16 +6,16 @@ pub struct HeaderData {
     pub dir_block_len: u32,     // 4
     pub names_block_ptr: u32,   // 4
     pub names_block_len: u32,   // 4
-    pub data_ptr: u32,          // 4
+    pub data_ptr: u32,          // 4 // TODO investigate the meaning of this field
     pub last78: u32,            // 4
 }                               // Total: 24 bytes
 
 pub const HEADER_DATA_SIZE: usize = 24;
 
 impl DataStruct for HeaderData {
-    fn read(data: &[u8], offset: usize) -> Result<Self, DataStructError> {
+    fn read(data: &[u8], offset: usize) -> Result<Self, HpiError> {
         if offset + HEADER_DATA_SIZE > data.len() {
-            return Err(DataStructError::NotEnoughSize {
+            return Err(HpiError::NotEnoughSpace {
                 needed: HEADER_DATA_SIZE,
                 available: data.len() - offset,
             });
@@ -33,9 +33,15 @@ impl DataStruct for HeaderData {
         })
     }
 
-    fn write(&self, out_data: &mut [u8], offset: usize) -> Result<(), DataStructError> {
+    fn cursor_read(data: &[u8], cursor: &mut usize) -> Result<Self, HpiError> {
+        let result = HeaderData::read(data, *cursor);
+        *cursor += HEADER_DATA_SIZE;
+        result
+    }
+
+    fn write(&self, out_data: &mut [u8], offset: usize) -> Result<(), HpiError> {
         if offset + HEADER_DATA_SIZE > out_data.len() {
-            return Err(DataStructError::NotEnoughSize {
+            return Err(HpiError::NotEnoughSpace {
                 needed: HEADER_DATA_SIZE,
                 available: out_data.len() - offset,
             });
@@ -92,7 +98,7 @@ mod tests {
             names_block_ptr: 0x01020408,
             names_block_len: 0xABCDEF12,
             data_ptr: 0x1337C0DE,
-            last78: 13374269,
+            last78: 0x13374269,
         };
 
         let mut bytes: [u8; HEADER_DATA_SIZE] = [0; HEADER_DATA_SIZE];
