@@ -1,8 +1,7 @@
 use crate::cli::{CliOperation, ListOptions};
+use regex::Regex;
 
 pub fn parse_list(sub_args: &[String]) -> Result<CliOperation, String> {
-    dbg!(sub_args);
-
     if sub_args.len() < 1 {
         return Err("Missing input HPI file argument.".to_string());
     }
@@ -11,14 +10,12 @@ pub fn parse_list(sub_args: &[String]) -> Result<CliOperation, String> {
     let mut only_dirs = false;
     let mut only_files = false;
     let mut match_pattern: Option<String> = None;
-    let mut match_regexp: Option<String> = None;
+    let mut match_regex: Option<Regex> = None;
     let mut skip_next_arg = false;
 
     let op_args = &sub_args[1..];
 
     for (index, arg) in op_args.iter().enumerate() {
-        println!("{}: {}", index, arg);
-
         if skip_next_arg {
             skip_next_arg = false;
             continue;
@@ -48,17 +45,25 @@ pub fn parse_list(sub_args: &[String]) -> Result<CliOperation, String> {
             continue;
         }
 
-        if arg == "--regexp" || arg == "-r" {
+        if arg == "--regex" || arg == "-r" {
             if is_last_arg {
                 return Err("Missing regexp after --regex parameter".to_string());
             }
 
             let next_arg = &op_args[index + 1];
-            match_regexp = Some(next_arg.to_string());
+
+            match_regex = match Regex::new(next_arg) {
+                Ok(regex) => Some(regex),
+                Err(err) => {
+                    return Err(format!("Error parsing regex: {}\nRegex error: {err}", next_arg));
+                },
+            };
 
             skip_next_arg = true;
             continue;
         }
+
+        return Err(format!("Unknown argument: {}", arg));
     }
 
     if only_files && only_dirs {
@@ -70,7 +75,7 @@ pub fn parse_list(sub_args: &[String]) -> Result<CliOperation, String> {
         only_dirs,
         only_files,
         match_pattern,
-        match_regexp,
+        match_regex,
     };
 
     Ok(CliOperation::List(options))

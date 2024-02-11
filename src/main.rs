@@ -30,6 +30,10 @@ fn main() {
                 eprintln!("An error occurred executing your command:");
                 eprintln!("{}", msg);
             },
+            CliError::IoError(msg) => {
+                eprintln!("An IO error:");
+                eprintln!("{}", msg);
+            },
             CliError::HpiError(err) => {
                 eprintln!("An HPI error has occurred:");
                 // TODO handle the error properly

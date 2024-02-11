@@ -1,4 +1,4 @@
-use super::CliError;
+use crate::cli::CliError;
 
 pub struct ExtractOptions {
     pub input_hpi_path: String,
